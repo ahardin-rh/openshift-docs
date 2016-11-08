@@ -565,3 +565,62 @@ administrator, you can grant them the abilities.
 ----
 $ oadm policy add-role-to-user system:daemonset-admin <user>
 ----
+
+[[manage-authorization-policy-creating-local-role]]
+== Creating a Local Role
+
+To create a local role for a project, it is recommended that you build it from
+scratch rather than copying an existing role.
+
+.Example Role
+----
+apiVersion: v1
+kind: Role
+metadata:
+  name: role_name
+rules:
+- apiGroups: null
+  attributeRestrictions:
+    apiVersion: v1
+    kind: IsPersonalSubjectAccessReview
+  resources:
+  - localsubjectaccessreviews
+  - subjectaccessreviews
+  verbs:
+  - create
+----
+
+. Open the file in your editor.
+
+. Change the name (`exampleview`, for example).
+
+. Change `kind` to `Role`.
+
+. Remove `resourceVersion`, `selfLink`, `uid`, and `creationTimestamp`.
+
+. Optionally, add `namespace: project-name`.
+
+. Save the file.
+
+. Run:
++
+----
+$ oc create -f path/to/role_exampleview.yml
+----
+
+. Optionally, annotate it with a description.
+
+To use the new role:
+
+Run:
+
+----
+$ oadm policy add-role-to-user exampleview user2
+----
+
+
+[NOTE]
+====
+Within a project, project administrators should be able to see `rolebindings`,
+not `clusterrolebindings`.
+====
