@@ -569,46 +569,50 @@ $ oadm policy add-role-to-user system:daemonset-admin <user>
 [[manage-authorization-policy-creating-local-role]]
 == Creating a Local Role
 
-To create a local role for a project, it is recommended that you build it from
-scratch rather than copying an existing role.
+To create a local role for a project, you can either copy & modify an existing role
+or build a new role from scratch.  It is recommended that you build from scratch so that
+you understand each of the permissions you assign.
 
-.Example Role
+To copy the Cluster Role 'view' to use as a local Role:
+----
+oc get clusterole view -o yaml > clusterrole_view.yaml
+cp clusterole_view.yaml localrole_exampleview.yaml
+vim localrole_exampleview.yaml
+# 1. Update kind: ClusterRole to kind: Role
+# 2. Update name: view to name: exampleview
+# 3. Remove resourceVersion, selfLink, uid & createionTimestamp
+oc project <project you want to add the local role exampleview to>
+oc create -f path/to/localrole_exampleview.yaml
+----
+
+To create a new Role from scratch, save this snippet into the file 'role_exampleview.yaml':
+
+.Example Role awesomview
 ----
 apiVersion: v1
 kind: Role
 metadata:
-  name: role_name
+  name: exampleview
 rules:
 - apiGroups: null
-  attributeRestrictions:
-    apiVersion: v1
-    kind: IsPersonalSubjectAccessReview
+  attributeRestrictions: null
   resources:
-  - localsubjectaccessreviews
-  - subjectaccessreviews
+  - pods
+  - builds
   verbs:
-  - create
+  - get
+	- list
+	- watch
 ----
 
-. Open the file in your editor.
-
-. Change the name (`exampleview`, for example).
-
-. Change `kind` to `Role`.
-
-. Remove `resourceVersion`, `selfLink`, `uid`, and `creationTimestamp`.
-
-. Optionally, add `namespace: project-name`.
-
-. Save the file.
-
-. Run:
+Then Run:
 +
 ----
+$ oc project <project you want to add the local role exampleview to>
 $ oc create -f path/to/role_exampleview.yml
 ----
 
-. Optionally, annotate it with a description.
+Optionally, annotate it with a description.
 
 To use the new role:
 
@@ -621,6 +625,20 @@ $ oadm policy add-role-to-user exampleview user2
 
 [NOTE]
 ====
+A  `clusterrolebinding` is a rolebinding that exists at the cluster level.  A `rolebinding`
+exists at the project level. This can be confusing.  For example, the `clusterrolebinding` `view` must
+be assigned to a user within a project for that user to view the project.  Local roles are only
+created if a cluster role does not provide the set of permissions needed for a particular situation,
+which is unlikely.
+
+Some Cluster Role names are initially confusing.  The `clusterrole` `clusteradmin` can be assigned to
+a user within a project making it appear that this user has the priviledges of a cluster admin.  This
+is not the case.  The `clusteradmin` Cluster Role bound to a certain project is more like a super admin
+for that project, granting the permissions of the ClusterRole `admin` plus a few additional permissions
+like the ability to edit ratelimits.  This can appear especially confusing via the web UI which will not
+list cluster policy (where Cluster Admins exist) but will list local policy (where a locally bound clusteradmin
+may exist). 
+
 Within a project, project administrators should be able to see `rolebindings`,
 not `clusterrolebindings`.
 ====
