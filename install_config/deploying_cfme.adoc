@@ -13,23 +13,6 @@ toc::[]
 
 == Overview
 
-[NOTE]
-====
-Deploying Red Hat CloudForms on {product-title} is a Technology Preview feature
-only.
-ifdef::openshift-enterprise[]
-Technology Preview features are not
-supported with Red Hat production service level agreements (SLAs), might not be
-functionally complete, and Red Hat does not recommend to use them for
-production. These features provide early access to upcoming product features,
-enabling customers to test functionality and provide feedback during the
-development process.
-
-For more information on Red Hat Technology Preview features support scope, see
-https://access.redhat.com/support/offerings/techpreview/.
-endif::[]
-====
-
 The {product-title} installer includes an Ansible role and playbook for
 deploying Red Hat CloudForms 4.5 (CloudForms Management Engine 5.8, or CFME) on
 {product-title}. This deployment must be run on a dedicated {product-title}
@@ -180,7 +163,7 @@ issue. Further instructions are provided in
 xref:deploying-cfme-manual-cleanup[Manual Clean-up].
 ====
 
-To run the playbook to deploy CFME: 
+To run the playbook to deploy CFME:
 
 . In your existing inventory file, set the `openshift_cfme_install_app` parameter
 to `True` under the `[OSEv3:vars]` section:
@@ -255,12 +238,12 @@ endif::[]
 ifdef::openshift-enterprise[]
 # docker pull registry.access.redhat.com/cloudforms45/cfme-openshift-app
 Using default tag: latest
-Trying to pull repository registry.access.redhat.com/cloudforms45/cfme-openshift-app ... 
+Trying to pull repository registry.access.redhat.com/cloudforms45/cfme-openshift-app ...
 sha256:bc6baac5aeba5affe0bada1bfbe330cd2d58da82767d66b3fa9ab12471a1b0f5: Pulling from registry.access.redhat.com/cloudforms45/cfme-openshift-app
 
-d55ab3b04d8b: Already exists 
-b94f985aad49: Already exists 
-3cd23d7690bd: Already exists 
+d55ab3b04d8b: Already exists
+b94f985aad49: Already exists
+3cd23d7690bd: Already exists
 Digest: sha256:bc6baac5aeba5affe0bada1bfbe330cd2d58da82767d66b3fa9ab12471a1b0f5
 Status: Image is up to date for registry.access.redhat.com/cloudforms45/cfme-openshift-app:latest
 endif::[]

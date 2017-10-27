@@ -13,27 +13,6 @@ toc::[]
 [[service-catalog-overview]]
 == Overview
 
-[NOTE]
-====
-Enabling the service catalog is a Technology Preview feature only.
-ifdef::openshift-enterprise[]
-Technology Preview features are not
-supported with Red Hat production service level agreements (SLAs), might not be
-functionally complete, and Red Hat does not recommend to use them for
-production. These features provide early access to upcoming product features,
-enabling customers to test functionality and provide feedback during the
-development process.
-
-For more information on Red Hat Technology Preview features support scope, see
-https://access.redhat.com/support/offerings/techpreview/.
-endif::[]
-
-ifdef::openshift-origin,openshift-enterprise[]
-To opt-in during installation, see
-xref:../../install_config/install/advanced_install.adoc#enabling-service-catalog[Advanced Installation].
-endif::[]
-====
-
 When developing microservices-based applications to run on cloud native
 platforms, there are many ways to provision different resources and share their
 coordinates, credentials, and configuration, depending on the service
@@ -98,7 +77,7 @@ known as _unbinding_. Part of the deletion process includes deleting the secret
 that references the service binding being deleted.
 
 Once all the service bindings are removed, the service instance may be deleted.
-Deleting the service instance is known as _deprovisioning_. 
+Deleting the service instance is known as _deprovisioning_.
 
 [[service-catalog-concepts-terminology]]
 == Concepts and Terminology

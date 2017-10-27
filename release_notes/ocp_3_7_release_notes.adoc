@@ -1,0 +1,1534 @@
+[[release-notes-ocp-3-7-release-notes]]
+= {product-title} 3.7 Release Notes
+{product-author}
+{product-version}
+:data-uri:
+:icons:
+:experimental:
+:toc: macro
+:toc-title:
+:prewrap!:
+
+toc::[]
+
+== Overview
+
+Red Hat {product-title} is a Platform as a Service (PaaS) that provides
+developers and IT organizations with a cloud application platform for deploying
+new applications on secure, scalable resources with minimal configuration and
+management overhead. {product-title} supports a wide selection of
+programming languages and frameworks, such as Java, Ruby, and PHP.
+
+Built on Red Hat Enterprise Linux and Google Kubernetes, {product-title}
+provides a secure and scalable multi-tenant operating system for today’s
+enterprise-class applications, while providing integrated application runtimes
+and libraries. {product-title} brings the OpenShift PaaS platform to customer
+data centers, enabling organizations to implement a private PaaS that meets
+security, privacy, compliance, and governance requirements.
+
+[[ocp-36-about-this-release]]
+== About This Release
+
+Red Hat {product-title} version 3.7
+(link:https://access.redhat.com/errata/RHBA-2017:3188[RHSA-2017:3188]) is now
+available. This release is based on
+link:https://github.com/openshift/origin/releases/tag/v3.7.0-rc.0[OpenShift
+Origin 3.7]. New features, changes, bug fixes, and known issues that pertain to
+{product-title} 3.7 are included in this topic.
+
+{product-title} 3.7 is supported on RHEL 7.3, 7.4, and Atomic Host 7.4.2 and
+newer with the latest packages from Extras, including Docker 1.12.
+
+For initial installations, see the
+xref:../install_config/install/planning.adoc#install-config-install-planning[Installing
+a Cluster] topics in the
+xref:../install_config/index.adoc#install-config-index[Installation and
+Configuration] documentation.
+
+To upgrade to this release from a previous version, see the
+xref:../install_config/upgrading/index.adoc#install-config-upgrading-index[Upgrading
+a Cluster] topics in the
+xref:../install_config/index.adoc#install-config-index[Installation and
+Configuration] documentation.
+
+[[ocp-36-new-features-and-enhancements]]
+== New Features and Enhancements
+
+This release adds improvements related to the following components and concepts.
+
+[[ocp-37-container-orchestration]]
+=== Container Orchestration
+
+[[ocp-37kubernestes-upstream]]
+==== Kubernetes Upstream
+
+Many core features Google announced in June for Kubernetes 1.7 were the result
+of OpenShift engineering. Red Hat continues to influence the product in the
+areas of storage, networking, resource management, authentication and
+authorization, multi-tenancy, security, service deployments, templating, and
+controller functionality.
+
+[[ocp-37-crio]]
+==== CRI-O (Technology Preview)
+
+CRI-O v1.0 (currently in xref:ocp-37-technology-preview[Technology Preview]) is a
+lightweight, native Kubernetes container runtime interface. By design, it
+provides only the runtime capabilities needed by the kublet. CRI-O is designed
+to be part of Kubernetes and evolve in lock-step with the platform.
+
+CRI-O brings:
+
+* A minimal and secure architecture.
+* Excellent scale and performance.
+* The ability to run any Open Container Initiative (OCI) or docker image.
+* Familiar operational tooling and commands.
+
+image::crio-3-7.png[CRI-O]
+
+[[ocp-37-cluster-wide-tolerations-per-namespace-tolerations]]
+==== Cluster-wide Tolerations and Per-namespace Tolerations to Control Pod Placement
+
+In a multi-tenant environment, you want to leverage administration controllers
+to help define rules that can help govern a cluster, should a tenant not set a
+toleration for placement.
+
+The following is offered to administrators where the namespace setting will
+override the cluster setting:
+
+* Cluster-wide and per-namespace default toleration for pods.
+* Cluster-wide and per-namespace white-listing of toleration for pods.
+
+.Cluster-wide Off Example
+----
+admissionConfig:
+  pluginConfig:
+    PodTolerationRestriction:
+      configuration:
+        kind: DefaultAdmissionConfig
+        apiVersion: v1
+        disable: true
+----
+
+.Cluster-wide On Example
+----
+admissionConfig:
+  pluginConfig:
+    PodTolerationRestriction:
+      configuration:
+        apiVersion: podtolerationrestriction.admission.k8s.io/v1alpha1
+        kind: Configuration
+        default:
+         - key: key3
+           value: value3
+        whitelist:
+         - key: key1
+           value: value1
+         - key: key3
+           value: value3
+----
+
+.Namespece-specific Example
+----
+piVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    openshift.io/description: ""
+    openshift.io/display-name: ""
+    openshift.io/sa.scc.mcs: s0:c8,c7
+    openshift.io/sa.scc.supplemental-groups: 1000070000/10000
+    openshift.io/sa.scc.uid-range: 1000070000/10000
+    scheduler.alpha.kubernetes.io/defaultTolerations: '[ { "key": "key1", "value":"value1" }]'
+    scheduler.alpha.kubernetes.io/tolerationsWhitelist: '[ { "key": "key1", "value":
+      "value1" }, { "key": "key2", "value": "value2" } ]'
+  generateName: dma-
+spec:
+  finalizers:
+  - openshift.io/origin
+  - kubernetes
+----
+
+[[ocp-37-security]]
+=== Security
+
+[[ocp-37-documented-private-public-key-configurations-and-crypto-levels]]
+==== Documented Private and Public Key Configurations and Crypto Levels
+
+{product-title} is a secured by default implementation of Kubernetes.
+
+{product-title} leverages Transport Layer Security (TLS) cipher suites, JSON Web
+Algorithms (JWA) crypto algorithms, and offers external libraries such as The
+Generic Security Service Application Program Interface (GSSAPI) and libgpgme.
+
+xref:../architecture/index.adoc#architecture-index[Private and public key
+configurations and Crypto levels] are now documented for {product-title}.
+
+[[ocp-37-node-authorizer-node-restriction-admission-plug-in]]
+==== Node Authorizer and Node Restriction Admission Plug-in
+
+Pods can no longer try to gain information from secrets, configuration maps, PV,
+PVC, or API objects from other nodes.
+
+link:https://kubernetes.io/docs/admin/authorization/node/[Node authorizer]
+governs what APIs a kublet can perform. Spanning read-, write-, and auth-related
+operations. In order for the admission controller to know the identity of the
+node to enforce the rules, nodes are provisioned with credentials that identify
+them with the user name `system:node:<nodename>` and group `system:nodes`.
+
+These enforcements are in place by default on all new installations of
+{product-title} 3.7.  For upgrades from {product-title} 3.6, they are not in
+place due to the `system:nodes` RBAC being granted from OCP 3.6. To turn the
+enforcements on, run:
+
+----
+# oadm policy remove-cluster-role-from-group system:node system:nodes
+----
+
+[[ocp-37-advanced-auditing]]
+==== Advanced Auditing (Technology Preview)
+
+With Advanced Auditing (currently in xref:ocp-37-technology-preview[Technology
+Preview]), administrators are now exposed to more information from the API call
+within the audit trail. This provides a deeper traceability of what is occurring
+across the cluster.  We also capture all login events at the default logging
+level and modifications to role binds and SCC.
+
+{product-title} now has an audit `policyFile` or `policyConfiguration` where
+administrators can filter in on what they want to capture.
+
+See
+xref:../install_config/master_node_configuration.adoc#master-node-config-advanced-audit[Advanced
+Audit] for more information.
+
+[[ocp-37-complete-upstreaming-of-rbac-then-downstreaming]]
+==== Complete Upstreaming of RBAC, Then Downstreaming it Back into OpenShift
+
+The rolebinding and RBAC experience is now the same across all Kubernetes
+distributions.
+
+Administrators do not have to do anything for this migration to occur. The
+upgrade process to {product-title} 3.7 offers a seamless experience. Now, the
+user experience is consistent with upstream.
+
+A role can be defined within a namespace with a `Role`, or cluster-wide with a
+`ClusterRole`.
+
+A `RoleBinding` or `ClusterRoleBinding` binds a role to subjects. Subjects can
+be groups, users, or service accounts. A role binding grants the permissions
+defined in a role.
+
+[[ocp-37-flexvolume-support-for-non-stotage-use-cases]]
+==== Official FlexVolune Support for Non-storage Use Cases
+
+There is now a supported interface to allow you to bind and mount in content
+from a running pod. FlexVolume is a script interface that runs on the kublet and
+offers five main functions to help you mount in content such as device drivers,
+secrets, and certificates as bind mounts to the container from the host:
+
+* `init` - Initialize the volume driver.
+* `attach` - Attach the volume to the host.
+* `mount` - Mount the volume on the host. This is the part that makes the volume available
+to the host to mount it in *_/var/lib/kubelet_*.
+* `unmount` - Unmount the volume.
+* `detach` - Detach the volume from the host.
+
+[[ocp-37-longer-lived-api-tokens-to-oauth-clients]]
+==== Issue Longer-lived API Tokens to OAuth Clients
+
+Administrators now have the ability to set different token timeouts for the
+different ways users connect to {product-title} (for example, via the `oc` command
+line, from a GitHub authentication, or from the web console).
+
+Administrators can edit `oauthclients` and set the `accessTokenMaxAgeSeconds` to
+a time value in seconds that meets their needs.
+
+There are three possible OAuth client types:
+
+. `openshift-web-console` -  The client used to request tokens for the OpenShift web console.
+
+. `openshift-browser-client` - The client used to request tokens at
+*_/oauth/token/request_* with a user-agent that can handle interactive logins,
+such as using Auth from GitHub, Google Authenticator, and so on.
+
+. `openshift-challenging-client` - The client used to request tokens with a user-agent that can
+   handle WWW-Authenticate challenges, such as the `oc` command line.
+
+- When `accessTokenMaxAgeSeconds` is set to `0`, tokens do not expire.
+- When left blank, {product-title} uses the definition in `master-config`.
+- Edit the client of interest via:
++
+----
+# oc edit oauthclients openshift-browser-client
+----
+
+- Set `accessTokenMaxAgeSeconds` to `600`.
+- Check the setting via:
++
+----
+# oc get oauthaccesstoken
+----
+
+See
+xref:../architecture/additional_concepts/other_api_objects.adoc#accessTokenMaxAgeSeconds[Other
+API Objects] for more information.
+
+[[ocp-37-storage]]
+=== Storage
+
+[[ocp-37-local-persistent-volumes]]
+==== Local Storage Persistent Volumes (Technology Preview)
+
+Local storage persistent volumes is currently in
+xref:ocp-37-technology-preview[Technology Preview].
+
+Local persistent volumes (PVs) now offer the ability to allow tenants to request
+storage that is local to a node through the regular persistent volume claim
+(PVC) process without needing to know the node.  Local storage is commonly used
+in data store applications.
+
+The administrator needs to create the local storage on the nodes, mount them
+under directories, and then manually create the persistent volume (PV).
+Alternatively, they can use an external provisioner and feed it the node
+configuration via `configMaps`.
+
+Example persistent volume named `example-local-pv` that some tenant can now claim:
+
+----
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-local-pv
+  annotations:
+    "volume.alpha.kubernetes.io/node-affinity": '{
+      "requiredDuringSchedulingIgnoredDuringExecution": {
+        "nodeSelectorTerms": [
+          { "matchExpressions": [
+            { "key": "kubernetes.io/hostname",
+              "operator": "In",
+              "values": ["my-node"]
+            }
+          ]}
+         ]}
+        }'
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/disks/vol1
+----
+
+See
+xref:../install_config/configuring_local.adoc#install-config-configuring-local[Configuring
+for Local Volume] and
+xref:../install_config/persistent_storage/persistent_storage_local.adoc#install-config-persistent-storage-persistent-storage-local[Persistent
+Storage Using Local Volume] for more information.
+
+[[ocp-37-tenant-driven-storage-snapshotting]]
+==== Tenant-driven Storage Snapshotting (Technology Preview)
+
+Tenant-driven storage snapshotting is currently in
+xref:ocp-37-technology-preview[Technology Preview].
+
+Tenants now have the ability to leverage the underlying storage technology
+backing the persistent volume (PV) assigned to them to make a snapshot of their
+application data. Tenants can also now restore a given snapshot from the past to
+their current application.
+
+An external provisioner is used to access the EBS, GCE pDisk, HostPath, and
+Cinder snapshotting API. This Technology Preview feature has tested EBS and
+HostPath. The tenant must stop the pods and start them manually.
+
+. The administrator runs an external provisioner for the cluster. These are images
+from the Red hat Container Catalog.
+
+. The tenant made a PVC and owns a PV from one of the supported storage
+solutions.The administrator must create a new `StorageClass` in the cluster with:
++
+----
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: snapshot-promoter
+provisioner: volumesnapshot.external-storage.k8s.io/snapshot-promoter
+----
+
+. The tenant can create a snapshot of a PVC named `gce-pvc` and the resulting
+snapshot will be called `snapshot-demo`.
++
+----
+$ oc create -f snapshot.yaml
+
+apiVersion: volume-snapshot-data.external-storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: snapshot-demo
+  namespace: myns
+spec:
+  persistentVolumeClaimName: gce-pvc
+----
+
+. Now, they can restore their pod to that snapshot.
++
+----
+$ oc create -f restore.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: snapshot-pv-provisioning-demo
+  annotations:
+    snapshot.alpha.kubernetes.io/snapshot: snapshot-demo
+spec:
+  storageClassName: snapshot-promoter
+----
+
+[[ocp-37-storage-classes-get-zones]]
+==== Storage Classes Get Zones
+
+Public clouds are particular about not allowing storage to cross zones or
+regions, so tenants need an ability at times to specify a particular zone.
+
+In {product-title} 3.7, administrators can now leverage a zone's definition
+within the `StorageClass`:
+
+----
+kind: StorageClass
+apiVersion: storage.k8s.io/v1beta1
+metadata:
+  name: slow
+provisioner: kubernetes.io/<provisioner>
+parameters:
+  type: pd-standard
+  zones: zone1,zone2
+----
+
+See
+xref:../install_config/persistent_storage/dynamically_provisioning_pvs.adoc#install-config-persistent-storage-dynamically-provisioning-pvs[Dynamic
+Provisioning and Creating Storage Classes] for more information.
+
+[[ocp-37-increased-volume-density]]
+==== Increased Persistent Volume Density Support by CNS
+
+Container-native storage (CNS) on {product-title} 3.7 now supports much higher
+persistent volume density (three times more) to support a large number of
+applications at scale. This is due to the introduction of brick-multiplexing
+support in GlusterFS.
+
+Over 1,000 volumes in a 3-node cluster with 32 GB per node available to
+GlusterFS has been successfully tested. Also, 300 Block PVs are supported now on
+3-node CNS .
+
+[[ocp-37-cns-multi-protocol-support]]
+==== CNS Multi-protocol (File, Block, and S3) Support for OpenShift
+
+Container-native storage (CNS) is now extended support iSCSI and S3 back end for
+{product-title}. Heketi is enhanced to support persistent volume (PV) expansion,
+volume option, and HA.
+
+Block device-based RWO implementation is added to CNS to improve the performance
+of ElasticSearch, PostgreSQL, and so on. With {product-title} 3.7, Elastic and
+Cassandra are fully supported.
+
+[[ocp-37-cns-full-support-infrastructure-services]]
+==== CNS Full Support for Infrastructure Services
+
+Container-native storage (CNS) now fully supports all {product-title}
+infrastructure services: registry, logging, and metrics.
+
+{product-title} logging (with Elasticsearch) and {product-title} metrics (with
+Cassandra) are fully supported on persistent volumes backed by CNS/CRS iSCSI
+block storage.
+
+The {product-title} registry is hosted on CNS/CRS by RWX persistent volumes,
+providing high availability and redundancy through Gluster architecture.
+
+Logging and metrics were tested at scale with 1000+ pods.
+
+[[cop-37-automated-cns-deployment-with-openshift-advanced-installation]]
+==== Automated Container Native Storage Deployment with OpenShift Advanced Installation
+
+{product-title} 3.7 now includes an integrated and simplified installation of
+container-native storage (CNS) through the advanced installer. The advanced
+installer is enhanced for automated and integrated support for deployment of CNS
+including block provisioner, S3 provisioner, and files for correctly configured
+out-of-the-box {product-title} and CNS. The CNS storage device details are added
+to the installer’s inventory file. The installer manages configuration and
+deployment of CNS, its dynamic provisioners, and other pertinent details.
+
+[[ocp-37-scale]]
+=== Scale
+
+[[ocp-37-scale-cluster-limits]]
+==== Cluster Limits
+
+Updated guidance around
+xref:../scaling_performance/cluster_limits.adoc#scaling-performance-cluster-limits[Cluster
+Limits] for {product-title} 3.7 is now available.
+
+[[ocp-37-scale-tuned-profile-hierarchy]]
+==== Updated Tuned Profile Hierarchy
+
+The xref:../scaling_performance/host_practices.adoc#scaling-performance-capacity-tuned-profile[Tuned Profile Hierarchy]
+is updated as of 3.7.
+
+[[ocp-37-scale-cluster-loader]]
+==== Cluster Loader
+
+Guidance regarding use of
+xref:../scaling_performance/using_cluster_loader.adoc#scaling-performance-using-cluster-loader[Cluster
+Loader] is now available with the release of {product-title} 3.7. Cluster Loader
+is a tool that deploys large numbers of various objects to a cluster, which
+creates user-defined cluster objects. Build, configure, and run Cluster Loader
+to measure performance metrics of your {product-title} deployment at various
+cluster states.
+
+[[ocp-37-scale-benefits-of-using-the-overlay-graph-driver]]
+==== Guidance on Overlay Graph Driver with SELinux
+
+In {product-title} 3.7, guidance about the
+xref:../scaling_performance/optimizing_storage.adoc#benefits-of-using-the-overlay-graph-driver[benefits
+of using the Overlay Graph Driver with SELinux] is now available.
+
+[[ocp-37-scale-providing-storage-to-an-etcd-node-using-pci-passthrough-with-openstack]]
+==== Providing Storage to an etcd Node Using PCI Passthrough with OpenStack
+
+Guidance on
+xref:../scaling_performance/host_practices.adoc#providing-storage-to-an-etcd-node-using-pci-passthrough-with-openstack[Providing
+Storage to an etcd Node Using PCI Passthrough with OpenStack] is now available.
+
+[[ocp-37-networking]]
+=== Networking
+
+[[ocp-37-network-policy]]
+==== Network Policy
+Network Policy is now fully supported in {product-title} 3.7.
+
+Network Policy is an optional plug-in specification of how selections of pods
+are allowed to communicate with each other and other network endpoints. It
+provides fine-grained network namespace isolation using labels and port
+specifications.
+
+After installing the Network Policy plug-in, an annotation that flips the
+namespace from `allow all traffic` to `deny all traffic` must first be set on
+the namespace. At that point, `NetworkPolicies` can be created that define what
+traffic to allow. The annotation is as follows:
+
+----
+$ oc annotate namespace ${ns} 'net.beta.kubernetes.io/network-policy={"ingress":{"isolation":"DefaultDeny"}}'
+----
+
+The allow-to-red policy specifies "all red pods in namespace `project-a` allow
+traffic from any pods in any namespace." This does not apply to the red pod in
+namespace `project-b` because `podSelector` only applies to the namespace in
+which it was applied.
+
+.Policy applied to project
+----
+kind: NetworkPolicy
+apiVersion: extensions/v1beta1
+metadata:
+  name: allow-to-red
+spec:
+  podSelector:
+    matchLabels:
+      type: red
+  ingress:
+  - {}
+----
+
+See
+xref:../admin_guide/managing_networking.adoc#admin-guide-manage-networking[Managing
+Networking] for more information.
+
+[[ocp-27-cluster-ip-range-more-flexible]]
+==== Cluster IP Range Now More Flexible
+
+Cluster IP ranges are now more flexible by allowing multiple subnets for hosts.
+This provides the capability to allocate multiple, smaller IP address ranges for
+the cluster. This makes it easier to migrate from one allocated IP range to
+another.
+
+There are multiple comma-delimited CIDRs in the configuration file. Each node is
+allocated only a single subnet from within any of the available ranges. You can
+not allocate different-sized host subnets, or use this to change the host subnet
+size The `clusterNetworkCIDRs` can be different sizes, but must be equal to or
+larger than the host subnet size It is not allowed to have some nodes use
+subnets that are not part of the `clusterNetworkCIDRs`.
+
+In regard to migration or edits, networks can be added to the list, CIDRs in the
+list may be re-ordered, and a CIDR can be removed from the list when there are
+no nodes that have an SDN allocation from that CIDR.
+
+Example:
+
+----
+clusterNetworkCIDR: 10.1.0.0/24, 10.1.5.0/24, 10.2.1.0/24 …
+----
+
+[[ocp-37-routes-alloed-to-set-cookie-names-for-session-stickiness]]
+==== Routes Allowed to Set Cookie Names for Session Stickiness
+
+The HAProxy router can look for a cookie in a client request. Based on that
+cookie name and value, always route requests that have that cookie to the same
+pod instead of relying upon the client source IP, which can be obscured by an F5
+doing load balancing.
+
+A cookie with a unique name is used to handle session persistence.
+
+. Set a per-route configuration to set the cookie name used for the session.
+. Add an `env` to set a router-wide default.
+. Ensure that the cookie is set and honored by the router to control access.
+
+Example scenario:
+
+. Set a default cookie name for the HAProxy router:
++
+----
+$ oc env dc/router ROUTER_COOKIE_NAME=default-cookie
+----
+
+. Log in as a normal user and create the project/pod/svc/route:
++
+----
+$ oc login user1
+$ oc new-project project1
+$ oc create -f https://example.com/myhttpd.json
+$ oc create -f https://example.com/service_unsecure.json
+$ oc expose service service-unsecure
+----
+
+. Access the route:
++
+----
+$ curl $route -v
+----
++
+The HTTP response will contain the cookie name. For example:
++
+----
+Set-Cookie: default_cookie=[a-z0-9]+
+----
+
+. Modify the cookie name using route annotation:
++
+----
+$ oc annotate route service-unsecure router.openshift.io/cookie_name="route-cookie"
+----
+
+. Re-access the route:
++
+----
+$ curl $route -v
+----
++
+The HTTP response will contain the new cookie name:
++
+----
+Set-Cookie: route-cookie=[a-z0-9]+
+----
+
+See
+xref:../architecture/networking/routes.adoc#route-specific-annotations[Route-specific
+Annotations] for more information.
+
+[[ocp-37-hsts-policy-support]]
+==== HSTS Policy Support
+
+xref:../architecture/networking/routes.adoc#hsts[HTTP Strict Transport Security
+(HSTS)] ensures all communication between the server and client is encrypted and
+that all sent and received responses are delivered to and received from the
+authenticated server.
+
+An HSTS policy is provided to the client via an HTTPS header (HSTS headers over
+HTTP are ignored) using an `haproxy.router.openshift.io/hsts_header` annotation
+to the route. When the Strict-Transport-Security response in the header is
+received by a client, it observes the policy until it is updated by another
+response from the host, or it times-out (`max-age=0`).
+
+Example using reencrypt route:
+
+. Create the pod/svc/route:
++
+----
+$ oc create -f https://example.com/test.yaml
+----
+
+. Set the Strict-Transport-Security header:
++
+----
+$ oc annotate route serving-cert haproxy.router.openshift.io/hsts_header="max-age=300;includeSubDomains;preload"
+----
+
+. Access the route using `https`:
++
+----
+$ curl --head https://$route -k
+
+   ...
+   Strict-Transport-Security: max-age=300;includeSubDomains;preload
+   ...
+----
+
+[[ocp-37-semi-automatic-namespace-wide-egress-ip]]
+==== Semi-automatic Namespace-wide Egress IP
+
+All outgoing external connections from a project will share a single
+fixed-source IP address and will send all traffic via that IP so that external
+firewalls can recognize the application associated with a packet.
+
+See
+xref:../admin_guide/managing_networking.adoc#admin-guide-manage-networking[Managing
+Networking] for more information.
+
+[[ocp-37-master]]
+=== Master
+
+[[ocp-37-public-pull-url-provided-for-images]]
+==== Public Pull URL Provided for Images
+
+A public pull URL is provided for images versus being able to know the internal
+in-cluster IP or DNS of the service.
+
+A new API field for the image stream with the public URL of the image was added,
+and a public URL is configured in the *_master-config.yaml_* file.  The web
+console will understand this new field and generate the public pull
+specifications automatically to users (so users can just copy and paste the pull
+URL).
+
+Example:
+
+. Check the `internalRegistryHostname` setting in the *_master-config.yaml_* file:
++
+----
+  ...
+  imagePolicyConfig:
+    internalRegistryHostname: docker-registry.default.svc:5000
+  ...
+----
+
+. Delete the `OPENSHIFT_DEFAULT_REGISTRY` variable in both:
++
+----
+/etc/sysconfig/atomic-openshift-master-api
+/etc/sysconfig/atomic-openshift-master-controllers
+----
+
+. Start a build and check the push URL. It should push the new build image with
+`internalRegistryHostname` to the `docker-registry`.
+
+[[ocp-37-custom-resource-definitions]]
+==== Custom Resource Definitions
+
+A _resource_ is an endpoint in the Kubernetes API that stores a collection of
+API objects of a certain kind (for example, pod objects). A _custom resource
+definition_ is a built-in API that enables the ability to plug in your own
+custom, managed object and application as if it were native to Kubernetes.
+Therefore, you can leverage Kubernetes cluster management, RBAC and
+authentication services,  PI services, CLI, security, and so on, without having
+to know Kubernetes internals or modifying Kubernetes itself in any way.
+
+Custom Resource Definitions (CRD) deprecates Third Party Resources in Kubernetes
+1.7.
+
+How it works:
+
+. Define a CRD class (your custom objects) and register the new resource type.
+This defines how it fits into the hierarchy and how it will be referenced from
+the CLI and API.
+
+. Define a function to create a custom client, which is aware of the new resource
+schema.
+
+. Once completed, it can be accessed from the CLI. However, in order to build
+controllers or custom functionality, you need API access to the objects, and so
+you need to build a set of CRUD functions (library) to access the objects and the event-driven listener for controllers.
+
+. Create a client that:
++
+* Connects to the Kubernetes cluster.
+* Creates the new CRD (if it does not exist).
+* Creates a new custom client.
+* Creates a new test object using the client library.
+* Creates a controller that listens to events associated with new resources.
+
+See
+xref:../admin_guide/custom_resource_definitions.adoc#admin-guide-custom-resources[Extending
+the Kubernetes API with Custom Resources] for more information.
+
+[[ocp-37-api-aggregation]]
+==== API Aggregation
+
+There is now Kubernetes documentation on how API aggregation works in
+{product-title} 3.7 and how other users can add third-party APIs:
+
+* link:https://github.com/kubernetes/website/blob/master/docs/tasks/access-kubernetes-api/setup-extension-api-server.md[Set up an extension `api-server` to work with the aggregation layer]
+* link:https://github.com/kubernetes/website/blob/master/docs/concepts/api-extension/apiserver-aggregation.md[Kubernetes aggregation layer]
+
+[[ocp-37-master-prometheuh-endpoint-coverage]]
+==== Master Prometheus Endpoint Coverage
+
+Prometheus endpoint logic was added to upstream components so that monitoring
+and health indicators can be added around deployment configurations.
+
+[[ocp-37-end-to-end-provider-integration]]
+=== End-to-end Provider Integration
+
+[[ocp-37-deploying-cns-for-opsenshift-36]]
+==== Deploying Container-Native Storage for OpenShift Container Platform 3.6
+
+The
+link:https://access.redhat.com/documentation/en-us/red_hat_gluster_storage/3.3/html/container-native_storage_for_openshift_container_platform/[Deploying
+Container-Native Storage for OpenShift Container Platform 3.6] guide describes
+the prerequisites and provides step-by-step instructions to deploy
+container-native storage (Red Hat Gluster Storage 3.3) with {product-title}.
+
+[[ocp-37-openshift-for-ops-test-drive]]
+==== OpenShift for Ops Test Drive
+
+The link:https://www.redhat.com/en/engage/openshift-storage-testdrive-20170718[OpenShift for Ops Test Drive] provides system administrators with a no-cost, hands-on lab experience to evaluate OpenShift in a fully functional cloud-based environment.
+There is a self-paced, hands-on lab environment, in which students learn:
+
+* How to install and configure OpenShift, including log and metrics aggregation and external authentication.
+* How to install and configure CNS (Red Hat Gluster Storage) inside {product-title}.
+* How to perform basic administrative and maintenance operations.
+* Basic application life cycle with health and readiness monitoring.
+
+[[ocp-37-installation]]
+=== Installation
+
+[[ocp-37-migrate-etcd-before-upgarde]]
+==== Migrate etcd Before OpenShift Container Platform 3.7 Upgrade
+Starting in {product-title} 3.7, the use of the etcd3 v3 data model is required.
+
+{product-title} gains performance improvements with the v3 data model. In order
+to upgrade the data model, an embedded etcd configuration option in no longer
+allowed. Embedded is not co-located and mainly used in single-master
+deployments. Migration scripts will convert the v3 data model and allow you to
+move an embedded etcd to an external etcd either on the same host or a different
+host than the masters. In addition, there is a new scale up ability for etcd
+clusters.
+
+See
+xref:../install_config/upgrading/migrating_embedded_etcd.adoc#install-config-upgrading-etcd-data-migration[Migrating
+Embedded etcd to External etcd] for more information.
+
+[[ocp-37-modular-installer]]
+==== Modular Installer to Allow Playbooks to Run Independently
+
+The installer has been enhanced to allow administrators to install specific
+components. By breaking up the roles and playbooks, there is better targeting of
+ad hoc administration tasks.
+
+[[new-install-experience-around-phases]]
+==== New Installation Experience Around Phases
+When you run the installer, {product-title} now reports back at the end what
+phases you have gone through.
+
+If the installation fails during a phase, you will be notified on the screen
+along with the errors from the Ansible run. Once you resolve the issue, rather
+than run the entire installation over again, you can pick up from the failed
+phase. This results in an increased level of control during installations and
+results in time savings.
+
+[[ocp-37-increased-control-over-image-stream-templates]]
+==== Increased Control Over Image Stream and Templates
+With {product-title} 3.7, there is added control over whether or not your cluster
+automatically upgrades all the content provided during cluster upgrades.
+
+Edit the `openshift_install_examples` variable in the hosted file or set it as a variable in the installer.
+
+----
+RPM = /etc/origin/examples /etc/origin/hosted
+Container = /usr/share/openshift/examples /usr/share/openshift/hosted
+
+openshift_install_examples=false
+----
+
+Setting `openshift_install_examples` to `false` will cause the installer to not
+upgrade the imagestream and templates. `True` is the default behavior.
+
+[[ocp-37-install-config-cfme-from-ocp-installer]]
+==== Installation and Configuration of CFME 4.6 from the OpenShift Installer
+
+CloudForms Management Engine (CFME) 4.6 is now fully supported running on
+{product-title} 3.7 as a set of containers. CFME is an available API endpoint on
+all {product-title} clusters that choose to use it. More cluster administrators
+are now able to leverage CFME and begin experiencing the insight and automations
+available to them in {product-title}.
+
+To install CFME 4.6:
+
+----
+# ansible-playbook -v -i <YOUR_INVENTORY>
+playbooks/byo/openshift-management/config.yml
+----
+
+To configure CFME 4.6 to consume the {product-title} installation it is running on:
+
+----
+# ansible-playbook -v -i <YOUR_INVENTORY>
+playbooks/byo/openshift-management/add_container_provider.yml
+----
+
+You can also automate the configuration of the provider to point to multiple OpenShift clusters:
+
+----
+# ansible-playbook -v -e container_providers_config=/tmp/cp.yml
+playbooks/byo/openshift-management/add_many_container_providers.yml
+----
+
+[[ocp-37-diagnostics]]
+=== Diagnostics
+
+[[ocp-37-additional-health-checks]]
+==== Additional Health Checks
+
+More health checks are now available for administrators to run after
+installations and upgrades. Administrators need the ability to run tests
+periodically to help determine the health of the framework components within the
+cluster. {product-title} 3.7 offers test functionality via Ansible playbooks
+that can be run and output can be sent as file-based output.
+
+----
+$ ansible-playbook playbooks/byo/openshift-checks/adhoc.yml
+                curator
+                diagnostics
+                disk_availability
+                docker_image_availability
+                docker_storage
+                elasticsearch
+                etcd_imagedata_size
+                etcd_traffic
+                etcd_volume
+                fluentd
+                fluentd_config
+                kibana
+                logging
+                logging_index_time
+                memory_availability
+                ovs_version
+                package_availability
+                package_update
+                package_version
+
+$ ansible-playbook playbooks/byo/openshift-checks/adhoc.yml -e
+openshift_checks=fluentd_config,logging_index_time,docker_storage
+----
+
+Alternatively, they are included in the health playbook:
+
+----
+$ ansible-playbook playbooks/byo/openshift-checks/health.yml
+----
+
+To capture the output:
+
+----
+$ ansible-playbook playbooks/byo/openshift-checks/health.yml -e
+openshift_checks_output_dir=/tmp/checks
+----
+
+[[ocp-37-metrics-and-logging]]
+=== Metrics and Logging
+
+[[ocp-37-journald-system-logs]]
+==== Jouranld for System Logs and JSON File for Container Logs
+
+Docker log driver is set to `json-fiile` as the default for all nodes. Docker
+`log-driver` can be set to `journal`, but there is no log rate throttling with
+journal driver. So, there is always a risk for denial-of-service attacks from
+rogue containers.
+
+Fluentd will automatically determine which log driver (`journald` or
+`json-file`) the container runtime is using. Fluentd will now always read logs
+from journald and also *_/var/log/containers_* (if `log-driver` is set to
+`json-file`). Fluentd will no longer read from *_/var/log/messages_*.
+
+See
+xref:../install_config/aggregate_logging.adoc#install-config-aggregate-logging[Aggregating
+Container Logs] for more information.
+
+[[ocp-37-docker-events-and-api-calls-aggregated-to-efk-as-logs]]
+==== Docker Events and API Calls Aggregated to EFK as Logs
+
+Fluentd captures standard error and standard out from the running containers on
+the node. With this change, fluentd collects all the errors and events coming
+from the docker daemon running on the node and sends it to Elasticsearch (ES).
+
+Enable this via the {product-title} installer:
+
+----
+openshift_logging_fluentd_audit_container_engine=true
+----
+
+The collected information is in operation indices of ES and only cluster
+administrators have visual access. The event message includes action, pod name,
+image name, and user time-stamp.
+
+[[ocp-37-master-events-aggregated-to-efk-as-logs]]
+==== Master Events are Aggregated to EFK as Logs
+
+The *eventrouter* pod scrapes the events from kubernetes API and and outputs to
+*STDOUT*. The *fluentd* plug-in transforms the log message and sends it to
+Elasticsearch (ES).
+
+Enable `openshift_logging_install_eventrouter` by setting it to `true`. It is
+off by default. *Eventrouter* is deployed to the default namespace. Collected
+information is in operation indices of ES and only cluster administrators have
+visual access.
+
+See the
+link:https://github.com/openshift/origin-aggregated-logging/blob/master/docs/proposals/kube_events_design_doc.md[design
+documentation] for more information.
+
+==== Kibana Dashboards for Operations Are Now Shareable
+
+This allows {product-title} administrators the ability to share saved Kibana
+searches, visualizations, and dashboards.
+
+When `openshift_logging_elasticsearch_kibana_index_mode` is set to `shared_ops`, one
+`admin` user can create queries and visualizations for other `admin` users.
+Other users can not see those same queries and visualizations.
+
+When `openshift_logging_elasticsearch_kibana_index_mode` is set to `unique`,
+users can only see saved queries and visualizations they created. This is the
+default behavior.
+
+See
+xref:../install_config/aggregate_logging.adoc#aggregate-logging-ansible-variables[Aggregating
+Container Logs] for more information.
+
+[[ocp-37-removed-es-copy-method]]
+==== Removed ES_Copy Method for Sending Logs to External ES
+
+`ES_Copy` was replaced with the *secure_formard* plug-in for fluentd to send
+logs from fluentd to external fluentd (that can then ingest into ES). `ES_COPY`
+is removed from the installer and the documentation.
+
+When `openshift_installer` is run for logging to upgrade to 3.7, the installer
+now checks for `ES_COPY` in the inventory and fails the upgrade with:
+
+----
+msg: The ES_COPY feature is no longer supported. Please remove the variable from your inventory
+----
+
+See
+xref:../install_config/aggregate_logging.adoc#fluentd-log-external-elasticsearch[Aggregating
+Container Logs] for more information.
+
+[[ocp-37-expose-es-as-a-route]]
+==== Expose Elasticsearch as a Route
+
+By default, Elasticsearch (ES) deployed with OpenShift aggregated logging is not
+accessible from outside the logging cluster. This enables a route for external
+access to ES for those tools that want to access its data.
+
+You now have direct access to ES using only your OpenShift token and have the
+ability to provide the external ES and ES Ops hostnames when creating the server
+certificate (similar to Kibana). Ansible tasks now simplify route deployment.
+
+[[ocp-37-removed-metrics-and-logging-deployers]]
+==== Removed Metrics and Logging Deployers
+
+The metrics and logging deployers bare now replaced with `playbook2image` for
+`oc cluster up` so that `openshift-ansible` is used to install logging and
+metrics:
+
+----
+$ oc cluster up --logging --metrics
+----
+
+Check metrics and pod status:
+
+----
+$ oc get pod -n openshift-infra
+$ oc get pod -n logging
+----
+
+[[ocp-37-prometheus]]
+==== Prometheus (Technology Preview)
+
+{product-title} operators deploy Prometheus (currently in
+xref:ocp-37-technology-preview[Technology Preview] on a {product-title} cluster,
+collect Kubernetes and infrastructure metrics, and get alerts. Operators can see
+and query metrics and alerts on the Prometheus web dashboard, or bring their own
+Grafana and hook it up to Prometheus.
+
+See xref:../nstall_config/cluster_metrics.adoc#openshift-prometheus[Prometheus
+on OpenShift] for more information.
+
+[[ocp-37-integrated-approach-to-adding-hosa]]
+==== Integrated Approach to Adding Hawkular OpenShift Agent (Techology Preview)
+
+Hawkular OpenShift Agent (HOSA) remains in
+xref:ocp-37-technology-preview[Technology Preview]. It is packaged and can now
+be installed with the `openshift_metrics_install_hawkular_agent` option in the
+installer by setting it to `true`.
+
+See
+xref:../install_config/cluster_metrics.adoc#metrics-ansible-variable[Enabling
+Cluster Metrics] for more information.
+
+[[ocp-37-developer-experience]]
+=== Developer Experience
+
+[[ocp-37-template-instantation-api]]
+==== Template Instantiation API
+
+Clients can now easily invoke a server API instead of relying on client logic.
+
+* To set parameters, create a secret with values.
+* Create a `TemplateInstance` containing the whole template you want to
+instantiate, and a reference to the secret created above.
+* Poll the `TemplateInstance` or watch the `TemplateInstance` until either the
+`Ready` or `InstantiateFailure` condition types report status `True`.
+
+----
+$ curl -k \
+    -X POST \
+    -d @-  \
+    -H "Authorization: Bearer $Token" \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    https://$ENDPOINT/apis/template.openshift.io/v1/templateinstances <<'EOF'
+{
+  "kind": "TemplateInstance",
+  "apiVersion": "template.openshift.io/v1",
+  ...
+  EOF
+----
+
+[[ocp-37-dev-experience-metrics]]
+==== Metrics
+
+{product-title} now includes needed Prometheus monitoring and alerting. Expose
+build step timings (time to pull images, fetch sources, run assemble, commit
+images, push images). Expose failure reasons (for example, see that builds are
+consistently failing due to failure to fetch source).
+
+[[ocp-37-web-console]]
+=== Web Console
+
+[[ocp-37-openshift-ansible-broker]]
+==== OpenShift Ansible Broker
+
+In {product-title} 3.7, Open Service Broker API is implemented, enabling users
+to leverage Ansible for provisioning and managing services from the Service
+Catalog. This is a standardized approach for delivering simple to complex
+multi-container OpenShift services via Ansible. It works in conjunction with
+Ansible Playbook Bundle (APB) for lightweight application definition. APBs can
+be used to deliver and orchestrate on-platform services, but could also be used
+to provision and orchestrate off-platform services (from cloud providers, IaaS,
+and so on).
+
+OpenShift Ansible Broker supports production workloads and multiple service
+plans. There is now secure connectivity between Service Catalog and Service
+Broker.
+
+You can interact with the Service Catalog to provision and manage services while
+the details of the broker remain largely hidden.
+
+[[ocp-37-ansible-playbook-bundles]]
+==== Ansible Playbook Bundles
+
+Ansible Playbook Bundles (APBs) are short-lived, lightweight container image
+consisting of:
+
+* a simple directory structure with named action playbooks.
+* metadata (required and optional parameters, as well asdependencies).
+* an Ansible runtime environment.
+
+Developer tooling is included, providing a guided approach to APB creation.
+There is also support for the *_test_* playbook, allowing for functional testing
+of the service.) Two new APBs are introduced for MariaDB (SCL) and  MySQL DB
+(SCL).
+
+When a user provisions an application from the Service Catalog, the Ansible
+Service Broker will download the associated APB image from the registry and run
+it.
+
+Developing APBs can be done in one of two ways: Creating the APB container image
+manually using standardized container creation tooling, or with APB tooling that
+Red Hat will deliver, which provides a guided approach to creation.
+
+[[ocp-37-iopenshift-template-broker]]
+==== OpenShift Template Broker
+
+The OpenShift Template Broker exposes templates through a Open Service Broker
+API to the Service Catalog.
+
+The Template Broker matches the lifecycles of `provision`, `deprovision`,
+`bind`, and `unbind` with existing templates. No changes are required to
+templates, unless you expose `bind`. Your application will get injected with
+configuration details.
+
+[[ocp-37-initial-experience]]
+==== Initial Experience
+
+{product-title} 3.7 provides a better initial user experience with the Service
+Catalog. This includes:
+
+* A task-focused interface
+* Key call-outs
+* Unified search
+* Streamlined navigation
+
+The new user interface is designed to really streamline the getting started
+process, in addition to incorporating the new Service Catalog items. It shows
+the existing content (for example, builder images and templates) as well as
+catalog items (if the catalog is enabled).
+
+[NOTE]
+====
+The new user experience can be enabled as a Technology Preview feature without
+the Service Catalog to be active. A cluster with this user interface (UI)
+would still be supported. Running the catalog UI without the Service Catalog
+enabled will work, but access to templates without the catalog will require a
+few extra steps.
+====
+
+[[ocp-37-search-catalog]]
+==== Search Catalog
+
+{product-title} 3.7 provides a simple way to quickly get what you want The new
+Search Catalog user interface is designed to make it much easier to find items
+in a number of ways, making it even faster to find the items you are wanting to
+deploy.
+
+image::3.7-search-filter-catalog.gif[search catalog]
+
+[[ocp-37-add-from-catalog]]
+==== Add from Catalog
+
+Provision a service from the catalog. Select the desired service and follow
+prompts for the desired project and configuration details.
+
+image::3.7-add-to-project-wizard-animated.gif[add to project]
+
+[[ocp-37-connect-a-service]]
+==== Connect a Service
+Once a service is deployed, get coordinates to connect the application to it.
+
+The broker returns a secret, which is stored in the project for use. You are
+guided through a process to update the deployment to inject a secret.
+
+image::3.7-bind-mongodb-nodejs-at-creation.gif[connect a service]
+
+[[ocp-37-include-templates-from-oter-projects]]
+==== Include Templates from Other Projects
+
+Since templates are now served through a broker, there is now a way for you to
+deploy templates from other projects.
+
+Upload the template, then select the template from a project.
+
+image::3.7-add-to-project-options.png[Add to Project Options]
+
+[[ocp-37-notifications]]
+==== Notifications
+Key notifications are now under a single UI element, the notification drawer.
+
+The bell icon is decorated when new notifications exist. You can mark all read,
+clear all, view all, or dismiss individual ones. Key notifications are
+represented with the level of information, warning, or error.
+
+image::3.7-notification-drawer.png[Notification drawer]
+
+[[ocp-37-improved-quota-warnings]]
+==== Improved Quota Warnings
+Quota notifications are now put in the notification drawer and are less intrusive.
+
+image::37-quota-warning.png[quota warning]
+
+There are now separate notifications for each quota type instead of one generic
+warning. When at quota and not over quota, this is displayed as an informative
+message. Usage and maximum is displayed in the message. You can mark *Don't Show
+Me Again* per quota type. Administrators can create custom messages to the quota
+warning.
+
+[[ocp-47-environment-variable-editor-added-to-stateful-sets-page]]
+==== Environment Variable Editor Added to the Stateful Sets Page
+
+An environment variable editor is now added to the *Stateful Sets* page.
+
+image::37-statefulset-page-envar-editor.png[Stateful Sets Page]
+
+[[ocp-37-support-for-envfrom]]
+==== Support for the EnvFrom Construct
+
+Anything with a pod template now supports the `EnvFrom` construct that lets you
+break down an entire configuration map or secret into environment variables without
+explicitly setting `env name` to  `key mappings`.
+
+[[ocp-36-notable-technical-changes]]
+== Notable Technical Changes
+
+{product-title} 3.7 introduces the following notable technical changes.
+
+[discrete]
+[[ocpapi-connectivity-variables-now-deprecated]]
+=== API Connectivity Variables OPENSHIFT_MASTER and KUBERNETES_MASTER Are Now Deprecated
+
+{product-title} deployments using a
+xref:../dev_guide/deployments/deployment_strategies.adoc#custom-strategy[custom
+strategy] or
+xref:../dev_guide/deployments/deployment_strategies.adoc#lifecycle-hooks[hooks]
+are provided with a container environment, which includes two variables for API
+connectivity:
+
+* `OPENSHIFT_MASTER`: A URL to the OpenShift API .
+* `KUBERNETES_MASTER`: A URL to the Kubernetes API exposed by OpenShift.
+
+These variables are now deprecated, as they refer to internal endpoints rather
+than the published OpenShift API service endpoints. To connect to the OpenShift
+API in these contexts, use
+xref:../dev_guide/service_accounts.adoc#dev-guide-service-accounts[service DNS]
+or the automatically exposed `KUBERENTES`
+xref:../dev_guide/environment_variables.adoc#automatically-added-environment-variables[service
+environment variables].
+
+The `OPENSHIFT_MASTER` and `KUBERNETES_MASTER` environment variables are removed
+from deployment container environments as of {product-title} 3.7.
+
+[discrete]
+[[openshift-hosted-ansible-variables-now-deprecated]]
+=== openshift_hosted_{logging,metrics}_* Ansible Variables for the Installer Are Now Deprecated
+
+The `openshift_hosted_{logging,metrics}_*` Ansible variables used by the
+installer have been deprecated. The
+xref:../install_config/install/advanced_install.adoc#install-config-install-advanced-install[installation
+documentation] has been updated to use the newer variable names. The deprecated
+variable names are planned for removal in the next minor release of OpenShift
+Container Platform.
+
+[discrete]
+[[removed-generatedeploymentconfig-api-endpoint]]
+=== Removed generatedeploymentconfig API Endpoint
+
+The `generatedeploymentconfig` API endpoint is now removed
+
+[discrete]
+[[deprecating-some-plicy-related-apis]]
+=== Deprecated Policy Related APIs and Commands
+
+A large number of policy related APIs and commands are now deprecated. In
+{product-title} 3.7, the policy objects are completely removed and native RBAC
+is used instead. Any command trying to directly manipulate a policy object will
+fail. Roles and rolebindings endpoints are still available, and they proxy the
+operation to create native RBAC objects instead. The following commands do not
+work against a 3.7 server:
+
+----
+$ oadm overwrite-policy
+$ oadm migrate authorization
+$ oc create policybinding
+----
+
+[NOTE]
+====
+A 3.7 client will display an error message when trying these command against a
+3.7 server, but will still work against a previous server version, and old
+client will just fail hard against a 3.7 server.
+====
+
+[discrete]
+[[RHELAH-version-7-4-2-1-required-containerized-installations]]
+=== Red Hat Enterprise Linux Atomic Host Version 7.4.2.1 or Newer Required for Containerized Installations
+
+In {product-title} 3.7, containerized installations require Red Hat Enterprise
+Linux Atomic Host version 7.4.2.1 or newer.
+
+[discrete]
+[[installer-labeling-clusters-for-aws]]
+=== Labeling Clusters for Amazon Web Services
+
+Starting with 3.7 versions of the installer, if you configured AWS provider
+credentials, you must also ensure that all instances are labeled. Then, set the
+`openshift_clusterid` variable to the cluster ID. See
+xref:../admin_guide/aws_cluster_labeling.adoc#admin-guide-aws-cluster-labeling[Labeling
+Clusters for Amazon Web Services (AWS)] for more information.
+
+[discrete]
+[[stricter-sccs]]
+=== Stricter Security Context Constraints (SCCs)
+
+With the release of {product-title} 3.7, there are now some stricter security
+context constraints (SCCs). The following capabilities are now removed:
+
+- *nonroot* drops `KILL`, `MKNOD`, `SETUID`, and `SETGID`.
+- *hostaccess* drops `KILL`, `MKNOD`, `SETUID`, and `SETGID`.
+- *hostmount-anyuid* drops `MKNOD`.
+
+It is possible that the pods that previously were admitted by these SCCs, and
+were using such capabilities, will fail after upgrade. In these rare cases, the
+cluster administrator should create a custom SCC for such pods.
+
+[discrete]
+[[updated-installer-support-for-cfme]]
+=== Updated Installer Support for CFME 4.6
+
+There is now updated installer support for CloudForms Management Engine (CFME)
+4.6 on {product-title} 3.7.
+
+[discrete]
+[[updated-installer-support-for-cfme]]
+=== Node Authorizer and Admission Plug-in for Managing Node Permissions
+
+In {product-title} 3.7, the node authorizer and admission plug-in are used to
+manage and limit a node's permissions. Therefore, nodes should be removed from
+the group that previously granted them broad permissions across the cluster:
+
+----
+$ oc adm policy remove-cluster-role-from-group system:node system:nodes
+----
+
+In {product-title} 3.8, this step should be performed automatically via Ansible
+as a post-upgrade step.
+
+[discrete]
+[[kube-service-catalog-global]]
+=== The kube-service-catalog Namespace Is Global
+
+The `kube-service-catalog` namespace is now made global by Ansible. Therefore,
+if you want multicast to work in vnid 0, you must set the
+`netnamespace.network.openshift.io/multicast-enabled=true` annotation on both
+namespaces (`default` and `kube-service-catalog`).
+
+[[ocp-37-bug-fixes]]
+== Bug Fixes
+
+This release fixes bugs for the following components:
+
+*Authentication*
+
+*Builds*
+
+*Command Line Interface*
+
+*Installer*
+
+*Image*
+
+*Image Registry*
+
+*Kubernetes*
+
+*Logging*
+
+*Web Console*
+
+*Metrics*
+
+*Networking*
+
+*REST API*
+
+*Routing*
+
+*Storage*
+
+*Upgrades*
+
+[[ocp-37-technology-preview]]
+== Technology Preview Features
+
+Some features in this release are currently in Technology Preview. These
+experimental features are not intended for production use. Please note the
+following scope of support on the Red Hat Customer Portal for these features:
+
+https://access.redhat.com/support/offerings/techpreview[Technology Preview
+Features Support Scope]
+
+The following new features are now available in Technology Preview:
+
+- Prometheus Cluster Monitoring
+- xref:ocp-37-advanced-auditing[Advanced Auditing]
+- xref:ocp-37-local-persistent-volumes[Local Storage Persistent Volumes]
+- xref:ocp-37-crio[CRI-O]
+- xref:ocp-37-tenant-driven-storage-snapshotting[Tenant-driven Storage Snapshotting]
+
+The following features that were formerly in Technology Preview from a previous
+{product-title} release are now fully supported:
+
+- xref:../architecture/service_catalog/index.adoc#architecture-additional-concepts-service-catalog[Service Catalog]
+- xref:../install_config/install/advanced_install.adoc#configuring-template-service-broker[Template Service Broker]
+- xref:ocp-37-openshift-ansible-broker[OpenShift Ansible Broker]
+- xref:ocp-37-ansible-playbook-bundles[Ansible Playbook Bundles]
+- xref:../admin_guide/managing_networking.adoc#admin-guide-networking-networkpolicy[Network Policy]
+- xref:ocp-37-initial-experience[Initial Experience]
+- xref:ocp-37-add-from-catalog[Add from Catalog and Add to Project]
+- xref:ocp-37-search-catalog[Search Catalog]
+- xref:ocp-37-install-config-cfme-from-ocp-installer[Automated installation of CloudForms Inside OpenShift]
+
+The following features that were formerly in Technology Preview from a previous
+{product-title} release remain in Technology Preview:
+
+- xref:../dev_guide/cron_jobs.adoc#dev-guide-cron-jobs[Cron Jobs (formerly called Scheduled Jobs)]
+- xref:../dev_guide/deployments/kubernetes_deployments.adoc#dev-guide-kubernetes-deployments-support[Kubernetes
+Deployments Support]
+- xref:../release_notes/ocp_3_5_release_notes.adoc#ocp-35-statefulsets[`StatefulSets`, formerly known as `PetSets`]
+- xref:../admin_guide/quota.adoc#limited-resources-quota[Require Explicit Quota to Consume a Resource]
+- xref:../architecture/additional_concepts/storage.adoc#pv-mount-options[Mount Options]
+- xref:../install_config/install/advanced_install.adoc#advanced-install-configuring-system-containers[Installation of etcd, Docker Daemon, and Ansible Installer as System Containers]
+- Running OpenShift Installer as a System Container
+- Bind in Context
+- `mux`
+
+[[ocp-37-known-issues]]
+== Known Issues
+
+* The installer can not deploy system container-based installations when the
+specified registry requires authentication credentials in order to pull the
+required system container images. The fix for this depends on an update to the
+`atomic` command, which will be updated after {product-title} 3.7 GA.
+(link:https://bugzilla.redhat.com/show_bug.cgi?id=1505744[*BZ#1505744*])
+
+* A {product-title} 3.7 master will return an unstructured response instead of
+structured JSON when an action is forbidden. This is a known issue and will be
+fixed in {product-title} 3.8.
+
+* The volume snapshot Technology Preview feature may not be available to
+non-administrator users by default due to API RBAC settings. When the volume
+snapshot controller and provisioner are installed and run, the cluster
+administrator needs to configure the API access to the VolumeSnapshot objects by
+creating roles and cluster roles, then assigning them to the desired users or
+user groups.
+(link:https://bugzilla.redhat.com/show_bug.cgi?id=1502945[*BZ#1502945*])
+
+[[ocp-37-asynchronous-errata-updates]]
+== Asynchronous Errata Updates
+
+Security, bug fix, and enhancement updates for {product-title} 3.7 are released
+as asynchronous errata through the Red Hat Network. All {product-title} 3.7
+errata is https://access.redhat.com/downloads/content/290/[available on the Red
+Hat Customer Portal]. See the
+https://access.redhat.com/support/policy/updates/openshift[{product-title}
+Life Cycle] for more information about asynchronous errata.
+
+Red Hat Customer Portal users can enable errata notifications in the account
+settings for Red Hat Subscription Management (RHSM). When errata notifications
+are enabled, users are notified via email whenever new errata relevant to their
+registered systems are released.
+
+[NOTE]
+====
+Red Hat Customer Portal user accounts must have systems registered and consuming
+{product-title} entitlements for {product-title} errata notification
+emails to generate.
+====
+
+This section will continue to be updated over time to provide notes on
+enhancements and bug fixes for future asynchronous errata releases of
+{product-title} 3.7. Versioned asynchronous releases, for example with the form
+{product-title} 3.7.z, will be detailed in subsections. In addition, releases in
+which the errata text cannot fit in the space provided by the advisory will be
+detailed in subsections that follow.
+
+[IMPORTANT]
+====
+For any {product-title} release, always review the instructions on
+xref:../install_config/upgrading/index.adoc#install-config-upgrading-index[upgrading your cluster] properly.
+====
