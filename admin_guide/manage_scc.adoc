@@ -207,18 +207,9 @@ metadata:
 spec:
   securityContext:
     runAsUser: 1000 <1>
-    fsGroup: 2000
-  volumes:
-  - name: sec-ctx-vol
-    emptyDir: {}
   containers:
   - name: sec-ctx-demo
     image: gcr.io/google-samples/node-hello:1.0
-    volumeMounts:
-    - name: sec-ctx-vol
-      mountPath: /data/demo
-    securityContext:
-      allowPrivilegeEscalation: false
 ----
 <1> When a container or pod does not request a user ID under which it should be run,
 the effective UID depends on the SCC that emits this pod. Because restricted SCC
@@ -245,17 +236,9 @@ spec:
     type: RunAsAny
       uidRangeMin: 1000100000
       uidRangeMax: 1000100999
-    volumes:
-    - name: sec-ctx-vol
-      emptyDir: {}
     containers:
     - name: sec-ctx-demo
       image: gcr.io/google-samples/node-hello:1.0
-      volumeMounts:
-      - name: sec-ctx-vol
-        mountPath: /data/demo
-      securityContext:
-        allowPrivilegeEscalation: false
 ----
 <1> A container or pod that requests a specific user ID will be accepted by
 {product-title} only when a service account or a user is granted access to a SCC
