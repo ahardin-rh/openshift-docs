@@ -205,8 +205,7 @@ kind: Pod
 metadata:
   name: security-context-demo
 spec:
-  securityContext:
-    runAsUser: 1000 <1>
+  securityContext: <1>
   containers:
   - name: sec-ctx-demo
     image: gcr.io/google-samples/node-hello:1.0
@@ -232,11 +231,8 @@ metadata:
   name: security-context-demo
 spec:
   securityContext:
-    runAsUser: <1>
-    type: RunAsAny
-      uidRangeMin: 1000100000
-      uidRangeMax: 1000100999
-    containers:
+    runAsUser: 1000 <1>
+  containers:
     - name: sec-ctx-demo
       image: gcr.io/google-samples/node-hello:1.0
 ----
