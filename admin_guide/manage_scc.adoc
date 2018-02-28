@@ -215,11 +215,11 @@ the effective UID depends on the SCC that emits this pod. Because restricted SCC
 is granted to all authenticated users by default, it will be available to all
 users and service accounts and used in most cases. The restricted SCC uses
 `MustRunAsRange` strategy for constraining and defaulting the possible values of
-the `securityContext.runAsUse`r field. The admission plug-in will look for the
-`openshift.io/sa.scc.uid-range` annotation on the current namespace to populate
+the `securityContext.runAsUser` field. The admission plug-in will look for the
+`openshift.io/sa.scc.uid-range` annotation on the current project to populate
 range fields, as it does not provide this range. In the end, a container will
-have `runAsUser` equal to a semi-random value. The first value of the range is
-hard to predict because every namespace has different ranges. See
+have `runAsUser` equal to the first value of the range that is
+hard to predict because every project has different ranges. See
 xref:../architecture/additional_concepts/authorization.adoc#understanding-pre-allocated-values-and-security-context-constraints[Understanding
 Pre-allocated Values and Security Context Constraints] for more information.
 
