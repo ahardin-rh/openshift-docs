@@ -63,8 +63,8 @@ You can also redeem coupons after the registration process:
 . On the next *Subscriptions* page, click *Manage* next to the *Coupons* heading.
 
 . On the next *Subscription Coupons* page, you will see (if applicable) coupons
-that are available for you to use and those that are already in use.  To apply a
-new coupon, click *Apply New Coupon* and complete the workflow.
+that you have already redeemed for this subscription. To apply a new coupon,
+click *Apply New Coupon* and complete the workflow.
 
 [[getting-started-next-up-basic-walkthrough]]
 == Next Up: Basic Walkthrough
