@@ -75,7 +75,7 @@ Topics:
 - Name: Installing a cluster on AWS with customizations
   File: installing-customizations-cloud
 - Name: Uninstalling a cluster on AWS
-  File: uninstalling-cluster-aws  
+  File: uninstalling-cluster-aws
 ---
 Name: Authentication
 Dir: authentication
@@ -139,6 +139,15 @@ Topics:
 - Name: Creating a project as another user
   File: creating-project-other-user
   Distros: openshift-enterprise,openshift-origin
+---
+Name: Administering clusters
+Dir: administering_clusters
+Distros: openshift-origin, openshift-enterprise
+Topics:
+- Name: Setting quotas per project
+  File: setting-quotas-per-project
+- Name: Setting quotas across multiple projects
+  File: setting-quotas-across-multiple-projects
 ---
 Name: Networking
 Dir: networking
