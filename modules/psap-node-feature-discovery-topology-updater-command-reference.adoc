@@ -6,6 +6,15 @@
 [id="nfd-topology-updater-command-line-flags_{context}"]
 = NFD Topology Updater command line flags
 
+.Procedure
+
+. To view available command line flags, run the `nfd-topology-updater -help` command. In a podman container:
++
+[source,terminal]
+----
+$ podman run gcr.io/k8s-staging-nfd/node-feature-discovery:master nfd-topology-updater -help
+----
+
 [discrete]
 [id="nfd-topology-updater-help_{context}"]
 == -h, -help
